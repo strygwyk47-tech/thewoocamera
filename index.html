@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0e0e0f">
+<title>Frame Guide</title>
+<style>
+  :root{
+    --bg:#0e0e0f; --surface:#1a1a1c; --surface2:#252528;
+    --line:#5dcaa5; --amber:#ef9f27; --purple:#7f77dd; --red:#e24b4a;
+    --text:#f5f3ee; --textDim:#9b9a94; --textFaint:#65645f; --accent:#5dcaa5;
+    --sat:env(safe-area-inset-top,0px);
+    --sab:env(safe-area-inset-bottom,0px);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;overflow:hidden;background:#000;
+    font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Pretendard","Noto Sans KR",sans-serif;
+    color:var(--text);touch-action:manipulation;overscroll-behavior:none;
+    -webkit-user-select:none;user-select:none}
+  button{font-family:inherit;border:none;background:none;color:inherit;cursor:pointer}
+
+  .screen{position:fixed;inset:0;display:none}
+  .screen.on{display:block}
+
+  /* ── 카메라 화면 ── */
+  #camScreen{background:#000}
+  #camWrap{position:absolute;inset:0;overflow:hidden}
+  #cam{position:absolute;top:50%;left:50%;width:100%;height:100%;
+    object-fit:cover;transform:translate(-50%,-50%) scale(1);transform-origin:center}
+  #gridSvg{position:absolute;inset:0;pointer-events:none}
+
+  /* 수평계 */
+  #level{position:absolute;inset:0;pointer-events:none;display:none;
+    align-items:center;justify-content:center}
+  #level.on{display:flex}
+  #levelLine{position:absolute;width:120px;height:2.5px;border-radius:2px;background:var(--accent)}
+  #levelDot{position:absolute;width:9px;height:9px;border-radius:5px;background:var(--accent)}
+  #levelBadge{position:absolute;top:50%;margin-top:14px;background:rgba(93,202,165,.2);
+    padding:2px 8px;border-radius:8px;font-size:10px;font-weight:600;color:var(--accent);display:none}
+  #levelBadge.on{display:block}
+
+  /* 상단 바 */
+  .topbar{position:absolute;left:0;right:0;top:calc(var(--sat) + 8px);
+    padding:0 18px;display:flex;align-items:center;justify-content:space-between;z-index:5}
+  .brand{display:flex;align-items:center;gap:7px}
+  .logo{width:18px;height:18px;border:2px solid var(--accent);border-radius:4px}
+  .brandTxt{font-size:15px;font-weight:600}
+  .topBtn{width:34px;height:34px;border-radius:17px;background:rgba(255,255,255,.12);
+    display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600}
+
+  /* 점수 칩 */
+  .scoreChip{position:absolute;right:16px;top:calc(var(--sat) + 50px);z-index:5;
+    background:rgba(20,20,22,.78);border-radius:14px;padding:7px 12px;
+    display:flex;flex-direction:column;align-items:center;min-width:62px}
+  .scoreLabel{font-size:9px;color:var(--textDim);margin-bottom:1px}
+  .scoreVal{font-size:20px;font-weight:700}
+  .scoreSmall{font-size:11px;font-weight:500;color:var(--textDim)}
+
+  /* 기준선 토글 */
+  .guideToggles{position:absolute;right:16px;top:calc(var(--sat) + 112px);z-index:5;
+    display:flex;flex-direction:column;gap:7px}
+  .guideBtn{background:rgba(20,20,22,.72);border-radius:12px;padding:6px 9px;
+    display:flex;align-items:center;justify-content:center;gap:4px;
+    border:1px solid rgba(255,255,255,.08);min-width:62px;
+    font-size:11px;font-weight:500;color:var(--text)}
+  .guideBtn.on{background:var(--accent);border-color:transparent;color:#08221a;font-weight:600}
+  .guideBtn svg{width:16px;height:16px}
+
+  /* 줌 슬라이더 */
+  .zoomWrap{position:absolute;right:2px;top:32%;z-index:5;
+    display:flex;flex-direction:column;align-items:center;gap:8px;width:56px}
+  .zoomLabel{font-size:12px;font-weight:600;background:rgba(20,20,22,.72);
+    padding:3px 8px;border-radius:10px}
+  .zoomSliderBox{height:160px;width:40px;display:flex;align-items:center;justify-content:center}
+  #zoomSlider{width:160px;height:36px;transform:rotate(-90deg);-webkit-appearance:none;
+    appearance:none;background:transparent}
+  #zoomSlider::-webkit-slider-runnable-track{height:3px;border-radius:2px;
+    background:linear-gradient(to right,var(--accent) 0%,var(--accent) var(--fill,0%),rgba(255,255,255,.3) var(--fill,0%))}
+  #zoomSlider::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;
+    border-radius:50%;background:#fff;margin-top:-7.5px;box-shadow:0 1px 4px rgba(0,0,0,.4)}
+  #zoomSlider::-moz-range-track{height:3px;border-radius:2px;background:rgba(255,255,255,.3)}
+  #zoomSlider::-moz-range-progress{height:3px;border-radius:2px;background:var(--accent)}
+  #zoomSlider::-moz-range-thumb{width:18px;height:18px;border:none;border-radius:50%;background:#fff}
+  .zoomIc{color:var(--textDim);font-size:13px}
+
+  /* 코치 토스트 */
+  .coach{position:absolute;left:50%;transform:translateX(-50%);
+    bottom:calc(var(--sab) + 210px);z-index:5;
+    background:rgba(20,20,22,.82);border-radius:20px;padding:8px 15px;
+    display:flex;align-items:center;gap:7px;max-width:88%;border:1px solid rgba(93,202,165,.3)}
+  .coach.warn{border-color:rgba(239,159,39,.3)}
+  .coachDot{width:7px;height:7px;border-radius:4px;background:var(--accent);flex-shrink:0}
+  .coach.warn .coachDot{background:var(--amber)}
+  .coachTxt{font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+  /* 모드 선택 */
+  .modes{position:absolute;left:0;right:0;bottom:calc(var(--sab) + 152px);z-index:5;
+    display:flex;justify-content:center;gap:8px}
+  .modeBtn{background:rgba(20,20,22,.72);border-radius:18px;padding:7px 13px;
+    display:flex;align-items:center;gap:5px;border:1px solid rgba(255,255,255,.08);
+    font-size:12px;font-weight:500;color:var(--textDim)}
+  .modeBtn svg{width:14px;height:14px}
+  .modeBtn.on{background:var(--accent);border-color:transparent;color:#08221a;font-weight:600}
+
+  /* 격자 선택줄 */
+  .gridRow{position:absolute;left:16px;right:16px;bottom:calc(var(--sab) + 118px);z-index:5;
+    display:flex;align-items:center;justify-content:space-between}
+  .gridPills{display:flex;gap:6px}
+  .gridPill{background:rgba(20,20,22,.6);border-radius:13px;padding:4px 10px;
+    border:1px solid rgba(255,255,255,.07);font-size:10.5px;color:var(--textFaint)}
+  .gridPill.on{border-color:rgba(93,202,165,.4);color:var(--accent)}
+  .howtoBtn{display:flex;align-items:center;gap:5px;background:rgba(93,202,165,.18);
+    border-radius:16px;padding:5px 12px 5px 8px;border:1px solid rgba(93,202,165,.45)}
+  .howtoQ{width:16px;height:16px;border-radius:8px;background:var(--accent);
+    display:flex;align-items:center;justify-content:center;
+    color:#08221a;font-size:11px;font-weight:700}
+  .howtoLabel{color:var(--accent);font-size:11px;font-weight:600}
+
+  /* 하단 바 */
+  .bottombar{position:absolute;left:0;right:0;bottom:0;z-index:5;
+    height:calc(var(--sab) + 96px);padding:0 28px calc(var(--sab));
+    display:flex;align-items:center;justify-content:space-around}
+  .shutter{width:66px;height:66px;border-radius:33px;background:#fff;
+    border:4px solid rgba(255,255,255,.35);transition:transform .1s}
+  .shutter:active{transform:scale(.92)}
+  .iconBtn{width:48px;height:48px;border-radius:14px;background:rgba(255,255,255,.1);
+    display:flex;align-items:center;justify-content:center}
+  .iconBtn svg{width:22px;height:22px}
+
+  /* 촬영 플래시 */
+  #flash{position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:40;
+    transition:opacity .18s}
+
+  /* ── 권한/오류 화면 ── */
+  #permScreen{background:var(--bg);display:none;
+    flex-direction:column;align-items:center;justify-content:center;padding:30px;text-align:center}
+  #permScreen.on{display:flex}
+  .permTitle{font-size:17px;font-weight:600;margin-bottom:4px}
+  .dim{color:var(--textDim);font-size:13px;margin-top:6px;line-height:20px;max-width:320px}
+  .permBtn{margin-top:18px;background:var(--accent);padding:12px 22px;border-radius:12px;
+    color:#08221a;font-weight:600;font-size:14px}
+  .permBtn.sub{background:var(--surface2);color:var(--text);font-weight:500}
+
+  /* ── 분석 화면 ── */
+  #anaScreen{background:var(--bg);flex-direction:column}
+  #anaScreen.on{display:flex}
+  .anaHead{padding:calc(var(--sat) + 12px) 18px 12px;
+    display:flex;align-items:center;justify-content:space-between;
+    border-bottom:1px solid rgba(255,255,255,.06);flex-shrink:0}
+  .anaHeadTitle{font-size:17px;font-weight:600}
+  .anaHeadBtns{display:flex;gap:8px}
+  .closeBtn{width:32px;height:32px;border-radius:16px;background:var(--surface2);
+    display:flex;align-items:center;justify-content:center}
+  .closeBtn svg{width:18px;height:18px}
+  .anaBody{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;
+    padding:18px 18px calc(var(--sab) + 30px)}
+  .imgWrap{position:relative;width:100%;aspect-ratio:4/3;border-radius:14px;
+    overflow:hidden;margin-bottom:16px;background:var(--surface)}
+  .imgWrap img{width:100%;height:100%;object-fit:cover;display:block}
+  .imgWrap .ph{width:100%;height:100%;display:flex;align-items:center;justify-content:center;
+    color:var(--textFaint)}
+  .imgWrap svg.ov{position:absolute;inset:0;pointer-events:none}
+  .scoreCard{display:flex;align-items:center;background:var(--surface);
+    border-radius:14px;padding:16px;margin-bottom:16px}
+  .ringBox{position:relative;width:72px;height:72px;flex-shrink:0}
+  .ringNum{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    font-size:22px;font-weight:700}
+  .verdict{flex:1;margin-left:16px}
+  .verdictT{font-size:15px;font-weight:600;margin-bottom:3px}
+  .verdictD{font-size:12.5px;color:var(--textDim);line-height:18px}
+  .checkItem{display:flex;gap:11px;align-items:flex-start;background:var(--surface);
+    border-radius:9px;padding:12px;margin-bottom:9px}
+  .checkIc{width:24px;height:24px;border-radius:7px;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700}
+  .checkIc.ok{background:rgba(93,202,165,.15);color:var(--accent)}
+  .checkIc.warn{background:rgba(239,159,39,.15);color:var(--amber)}
+  .checkBody{flex:1}
+  .checkT{font-size:13px;font-weight:600;margin-bottom:2px}
+  .checkD{font-size:11.5px;color:var(--textDim);line-height:17px}
+  .checkScore{font-size:12px;font-weight:600;flex-shrink:0}
+  .primaryBtn{margin-top:18px;padding:14px;border-radius:14px;background:var(--accent);
+    width:100%;color:#08221a;font-size:14px;font-weight:600}
+  .ghostBtn{margin-top:10px;padding:13px;border-radius:14px;background:var(--surface2);
+    width:100%;color:var(--text);font-size:13px;font-weight:500}
+
+  /* ── 바텀시트 ── */
+  .sheetBackdrop{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:20;
+    opacity:0;pointer-events:none;transition:opacity .25s}
+  .sheetBackdrop.on{opacity:1;pointer-events:auto}
+  .sheet{position:fixed;left:0;right:0;bottom:0;z-index:21;background:var(--bg);
+    border-radius:22px 22px 0 0;padding:8px 18px calc(var(--sab) + 18px);
+    max-height:74%;display:flex;flex-direction:column;
+    transform:translateY(105%);transition:transform .3s cubic-bezier(.3,.9,.4,1)}
+  .sheet.on{transform:translateY(0)}
+  .sheetHandle{width:38px;height:4px;background:var(--surface2);border-radius:2px;
+    align-self:center;margin:10px 0;flex-shrink:0}
+  .sheetScroll{overflow-y:auto;-webkit-overflow-scrolling:touch}
+  .sheetSub{font-size:13px;color:var(--accent);font-weight:600;margin-bottom:2px}
+  .sheetSubDim{font-size:12px;color:var(--textDim)}
+  .sheetTitle{font-size:18px;font-weight:600;margin-bottom:14px}
+  .howtoHead{display:flex;align-items:flex-start;justify-content:space-between;
+    gap:12px;margin-bottom:12px}
+  .previewBox{width:150px;flex-shrink:0;background:var(--surface);border-radius:10px;
+    padding:6px;border:1px solid rgba(255,255,255,.06)}
+  .previewBox svg{display:block}
+  .howtoDesc{font-size:13px;line-height:21px;margin-bottom:14px;
+    background:var(--surface);border-radius:9px;padding:13px}
+  .keyRow{display:flex;gap:11px;align-items:flex-start;padding:9px 0;
+    border-bottom:1px solid rgba(255,255,255,.05)}
+  .keyIc{font-size:16px;width:20px;text-align:center;flex-shrink:0;line-height:1.3}
+  .keyT{font-size:13px;font-weight:600;margin-bottom:1px}
+  .keyD{font-size:11.5px;color:var(--textDim);line-height:17px}
+  .secondaryBtn{margin-top:16px;padding:13px;border-radius:12px;background:var(--surface2);
+    width:100%;text-align:center;font-size:13px;font-weight:500;color:var(--text);flex-shrink:0}
+
+  @media (prefers-reduced-motion:reduce){
+    *{transition:none!important;animation:none!important}
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══ 카메라 화면 ═══ -->
+<div id="camScreen" class="screen on">
+  <div id="camWrap">
+    <video id="cam" autoplay playsinline muted></video>
+  </div>
+  <svg id="gridSvg"></svg>
+
+  <div id="level">
+    <div id="levelLine"></div>
+    <div id="levelDot"></div>
+    <div id="levelBadge">수평 맞음</div>
+  </div>
+
+  <div class="topbar">
+    <div class="brand"><div class="logo"></div><span class="brandTxt">Frame Guide</span></div>
+    <button class="topBtn" id="btnTips">팁</button>
+  </div>
+
+  <div class="scoreChip">
+    <span class="scoreLabel">구도 점수</span>
+    <span class="scoreVal"><span id="liveScore">88</span><span class="scoreSmall">점</span></span>
+  </div>
+
+  <div class="guideToggles">
+    <button class="guideBtn" id="btnGuideH">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>수평
+    </button>
+    <button class="guideBtn" id="btnGuideV">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/></svg>수직
+    </button>
+  </div>
+
+  <div class="zoomWrap">
+    <span class="zoomLabel" id="zoomLabel">1.0×</span>
+    <div class="zoomSliderBox">
+      <input type="range" id="zoomSlider" min="0" max="1" step="0.01" value="0">
+    </div>
+    <span class="zoomIc">⌕</span>
+  </div>
+
+  <div class="coach" id="coach">
+    <div class="coachDot"></div>
+    <span class="coachTxt" id="coachTxt"></span>
+  </div>
+
+  <div class="modes" id="modes"></div>
+
+  <div class="gridRow">
+    <div class="gridPills" id="gridPills"></div>
+    <button class="howtoBtn" id="btnHowto"><span class="howtoQ">?</span><span class="howtoLabel">사용법</span></button>
+  </div>
+
+  <div class="bottombar">
+    <button class="iconBtn" id="btnGallery" title="갤러리에서 선택">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#f5f3ee" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2.5"/><circle cx="9" cy="10" r="1.8"/><path d="M3.5 17l4.8-4.8a1.5 1.5 0 012.1 0L15 16.8M13.5 15.3l2.2-2.2a1.5 1.5 0 012.1 0l2.7 2.7"/></svg>
+    </button>
+    <button class="shutter" id="btnShutter" aria-label="촬영"></button>
+    <button class="iconBtn" id="btnCycle" title="격자 전환">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#f5f3ee" stroke-width="1.8" stroke-linecap="round"><rect x="4" y="4" width="16" height="16" rx="2"/><line x1="9.3" y1="4" x2="9.3" y2="20"/><line x1="14.6" y1="4" x2="14.6" y2="20"/><line x1="4" y1="9.3" x2="20" y2="9.3"/><line x1="4" y1="14.6" x2="20" y2="14.6"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- ═══ 권한/오류 화면 ═══ -->
+<div id="permScreen" class="screen">
+  <div class="permTitle" id="permTitle">카메라 권한이 필요해요</div>
+  <div class="dim" id="permDesc">사진 구도를 분석하려면 카메라 접근을 허용해주세요.</div>
+  <button class="permBtn" id="btnRetry">다시 시도</button>
+  <button class="permBtn sub" id="btnGallery2">갤러리 사진으로 분석하기</button>
+</div>
+
+<!-- ═══ 분석 화면 ═══ -->
+<div id="anaScreen" class="screen">
+  <div class="anaHead">
+    <span class="anaHeadTitle">구도 분석 결과</span>
+    <div class="anaHeadBtns">
+      <button class="closeBtn" id="btnSave" title="사진 저장" style="display:none">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#f5f3ee" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11"/><path d="M7 11l5 5 5-5"/><path d="M5 20h14"/></svg>
+      </button>
+      <button class="closeBtn" id="btnAnaClose">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#f5f3ee" stroke-width="2" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
+      </button>
+    </div>
+  </div>
+  <div class="anaBody" id="anaBody"></div>
+</div>
+
+<!-- ═══ 바텀시트 ═══ -->
+<div class="sheetBackdrop" id="backdrop"></div>
+<div class="sheet" id="sheetHowto">
+  <div class="sheetHandle"></div>
+  <div class="sheetScroll" id="howtoContent"></div>
+</div>
+<div class="sheet" id="sheetTips">
+  <div class="sheetHandle"></div>
+  <div class="sheetScroll" id="tipsContent"></div>
+</div>
+
+<div id="flash"></div>
+<input type="file" id="fileInput" accept="image/*" style="display:none">
+<canvas id="capCanvas" style="display:none"></canvas>
+
+<script>
+'use strict';
+/* ═══════════════════════════════════════════════
+   Frame Guide — HTML 단일 파일 버전
+   원본: FrameGuideRN (Expo/React Native)
+   변환: 구도선·팁·코치 메시지·점수 로직 원본 유지
+   ═══════════════════════════════════════════════ */
+
+const COLORS = {
+  bg:'#0e0e0f', surface:'#1a1a1c', surface2:'#252528',
+  line:'#5dcaa5', amber:'#ef9f27', purple:'#7f77dd', red:'#e24b4a',
+  text:'#f5f3ee', textDim:'#9b9a94', textFaint:'#65645f', accent:'#5dcaa5',
+};
+
+/* ── 모드/구도선 데이터 (원본 guides.js) ── */
+const ICONS = {
+  home:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11l8-7 8 7"/><path d="M6 10v9h12v-9"/></svg>',
+  building:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="16" rx="1"/><line x1="9" y1="8" x2="10.5" y2="8"/><line x1="13.5" y1="8" x2="15" y2="8"/><line x1="9" y1="12" x2="10.5" y2="12"/><line x1="13.5" y1="12" x2="15" y2="12"/><path d="M10.5 20v-3.5h3V20"/></svg>',
+  bed:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18v-7a2 2 0 012-2h14a2 2 0 012 2v7"/><path d="M3 18h18"/><path d="M6 9V6h12v3"/></svg>',
+};
+
+const MODES = {
+  indoor: {
+    key:'indoor', name:'실내 공간', icon:'home',
+    grids:['thirds','fifths','center'],
+    gridLabels:{thirds:'3등분', fifths:'5등분', center:'대칭축'},
+    coachMessages:[
+      {type:'warn', text:'수직선을 벽·문틀에 맞추세요'},
+      {type:'good', text:'소실점이 중앙에 정렬됐어요'},
+      {type:'warn', text:'카메라 높이를 배전반 수준(120cm)으로'},
+      {type:'good', text:'문틀을 프레임으로 활용해보세요'},
+    ],
+    tips:[
+      {ic:'↕', color:'#5dcaa5', t:'카메라 높이 = 배전반 높이', d:'약 120cm. 너무 높으면 가구가 납작해지고 낮으면 천장이 잘립니다. 전문가가 공통 권장하는 실내 황금 높이.'},
+      {ic:'⇥', color:'#ef9f27', t:'문·아치를 프레임으로', d:'문틀 안에서 촬영하면 자연스러운 프레임 속 프레임. Pinterest 저장율이 2~3배 높습니다.'},
+      {ic:'▦', color:'#7f77dd', t:'마루·천장재는 소실점 방향으로', d:'바닥 나무결·천장 몰딩을 소실점 쪽으로 향하게. 리딩라인이 자연스럽게 생깁니다.'},
+      {ic:'▤', color:'#5dcaa5', t:'5등분 그리드 활용', d:'건축 전문가는 3등분보다 5등분을 선호. 소실점을 1/5 지점에 두면 더 정교한 균형감.'},
+    ],
+  },
+  outdoor: {
+    key:'outdoor', name:'야외 공간', icon:'building',
+    grids:['golden','layers','center'],
+    gridLabels:{golden:'황금비', layers:'3레이어', center:'대칭축'},
+    coachMessages:[
+      {type:'warn', text:'건물 수직선이 기울었어요 (키스톤)'},
+      {type:'good', text:'전경 요소가 시선을 이끌어요'},
+      {type:'warn', text:'지평선을 1/3 또는 2/3 지점에'},
+      {type:'good', text:'골든아워 빛이 좋아요'},
+    ],
+    tips:[
+      {ic:'☀', color:'#ef9f27', t:'골든아워에 촬영', d:'오전 7~9시, 오후 4~6시. 사선 빛이 건물 입체감을 살립니다. 정오 직사광은 그림자가 딱딱해요.'},
+      {ic:'❋', color:'#5dcaa5', t:'전경 요소는 필수', d:'식물·돌·울타리 등 전경이 건물로 시선을 이끄는 리딩라인. 인기 건축사진의 대부분이 전경을 포함합니다.'},
+      {ic:'⇅', color:'#7f77dd', t:'건물 수직선은 절대 수직', d:'올려다보면 건물이 사다리꼴로 좁아집니다(키스톤). 카메라를 수평으로 유지하세요.'},
+      {ic:'▤', color:'#5dcaa5', t:'황금비 Phi 그리드', d:'0.382:0.618 비율. 건물 모서리를 φ 교차점에 두면 3등분보다 세련된 결과.'},
+    ],
+  },
+  furniture: {
+    key:'furniture', name:'특정 가구', icon:'bed',
+    grids:['spiral','triangle','frame'],
+    gridLabels:{spiral:'황금나선', triangle:'삼각형', frame:'여백 프레임'},
+    coachMessages:[
+      {type:'good', text:'45° 사선 앵글이 입체감을 살려요'},
+      {type:'warn', text:'가구가 화면의 50~65%를 차지하도록'},
+      {type:'warn', text:'하단 여백을 상단보다 넓게'},
+      {type:'good', text:'배경이 단순해서 가구가 돋보여요'},
+    ],
+    tips:[
+      {ic:'△', color:'#ef9f27', t:'소품은 삼각형 구도로', d:'키 다른 소품 3개를 삼각형 꼭짓점에. 꽃병(높)·책(중)·캔들(낮) 조합이 전형적인 황금 삼각형.'},
+      {ic:'≡', color:'#5dcaa5', t:'전경 요소로 깊이감', d:'소파 앞 커피테이블 엣지가 살짝 보이면 3D 깊이감. 전경은 흐릿하게 두면 주피사체가 또렷해집니다.'},
+      {ic:'▯', color:'#7f77dd', t:'세로 4:5 비율', d:'가구 사진은 세로 구도가 SNS에서 더 많이 노출됩니다. 의자·조명은 세로가 자연스러워요.'},
+      {ic:'◐', color:'#5dcaa5', t:'배경색 대비 필수', d:'밝은 소파는 어두운 벽 앞에, 어두운 소파는 밝은 벽 앞에. 동일 톤이면 윤곽이 사라집니다.'},
+    ],
+  },
+};
+
+const GRID_GUIDE = {
+  thirds:{title:'3등분 격자', sub:'가장 기본이 되는 만능 구도',
+    how:'화면을 가로·세로 3등분한 선이 만나는 4개의 교차점 중 한 곳에 핵심 피사체를 두세요. 정중앙보다 교차점에 두면 훨씬 안정적이고 자연스러워 보입니다.',
+    keys:[
+      {ic:'●', c:'#5dcaa5', t:'교차점에 핵심 배치', d:'소파·조명 등 주인공을 4개 점 중 하나에.'},
+      {ic:'●', c:'#e24b4a', t:'소실점은 중앙 근처', d:'깊이감 선이 모이는 점을 화면 중앙에.'},
+    ]},
+  fifths:{title:'5등분 격자', sub:'건축 전문가가 선호하는 정밀 구도',
+    how:'3등분보다 촘촘한 5등분 선을 사용합니다. 소실점이나 핵심 요소를 1/5 또는 2/5 지점에 정확히 맞추면 3등분보다 정교하고 세련된 균형감이 나옵니다. 넓은 실내나 복잡한 공간에 특히 효과적이에요.',
+    keys:[
+      {ic:'●', c:'#e24b4a', t:'소실점을 1/5 지점에', d:'중앙이 아닌 1/5 지점이 더 정교한 긴장감.'},
+      {ic:'▦', c:'#5dcaa5', t:'복잡한 공간에 유리', d:'요소가 많을수록 5등분이 정리를 도와줍니다.'},
+    ]},
+  center:{title:'대칭축 격자', sub:'권위감과 안정감을 주는 정면 구도',
+    how:'화면 정중앙 세로축을 기준으로 좌우가 완전히 대칭이 되도록 촬영합니다. 소파를 정중앙에, 양옆 요소를 똑같이 배치하세요. Pinterest 저장율이 가장 높은 구도 중 하나예요.',
+    keys:[
+      {ic:'│', c:'#ef9f27', t:'중앙축에 피사체 정렬', d:'주인공을 정중앙 노란 축에 딱 맞춥니다.'},
+      {ic:'⇆', c:'#5dcaa5', t:'좌우 완전 대칭', d:'양옆 요소를 거울처럼 똑같이 배치.'},
+    ]},
+  golden:{title:'황금비 Phi 그리드', sub:'3등분보다 세련된 황금 비율',
+    how:'3등분(1:1:1)이 아닌 황금비(0.382:0.618)로 나눈 선입니다. 선이 중앙에 더 가까워요. 건물 모서리나 핵심 요소를 이 황금 교차점에 맞추면 자연에서 느껴지는 가장 조화로운 비율이 됩니다.',
+    keys:[
+      {ic:'●', c:'#e24b4a', t:'건물 모서리를 φ 교차점에', d:'황금 교차점은 3등분점보다 살짝 안쪽.'},
+      {ic:'▤', c:'#ef9f27', t:'고급스러운 균형감', d:'미술·건축에서 검증된 1:1.618 비율.'},
+    ]},
+  layers:{title:'3레이어 격자', sub:'깊이감을 만드는 전·중·배경 구조',
+    how:'화면을 전경·중경·배경 세 층으로 나눕니다. 전경(조경·식물)이 시선을 중경(건물)으로 이끌고, 배경(하늘)이 공간을 마무리해요. 전경 요소가 반드시 있어야 평면적이지 않고 깊이감이 생깁니다.',
+    keys:[
+      {ic:'▬', c:'#5dcaa5', t:'세 층을 모두 채우기', d:'전경·중경·배경이 다 보이도록 프레임.'},
+      {ic:'↑', c:'#ef9f27', t:'전경이 시선을 위로', d:'전경 리딩라인이 건물로 눈을 이끕니다.'},
+    ]},
+  spiral:{title:'황금나선', sub:'시선이 흐르는 곡선 길',
+    how:'나선이 가장 작게 감기는 중심(빨간 점)에 가구의 핵심 디테일을 두세요. 그리고 쿠션·화병 같은 소품을 곡선 바깥을 따라 배치하면 시선이 자연스럽게 흐릅니다. 45° 사선 앵글과 함께 쓰면 가장 효과적이에요.',
+    keys:[
+      {ic:'●', c:'#e24b4a', t:'중심에 핵심 디테일', d:'가까운 팔걸이·쿠션 질감을 나선 중심에.'},
+      {ic:'◜', c:'#ef9f27', t:'소품은 곡선 바깥으로', d:'중심에서 곡선 따라 화병까지 시선 흐름.'},
+    ]},
+  triangle:{title:'삼각형 격자', sub:'소품 스타일링의 황금 법칙',
+    how:'테이블 위 소품을 키 차이로 삼각형 꼭짓점에 배치합니다. 꽃병(높음)·책(중간)·캔들(낮음) 조합이 전형적이에요. 시선이 삼각형을 따라 자연스럽게 순환하면서 정돈된 느낌을 줍니다.',
+    keys:[
+      {ic:'△', c:'#ef9f27', t:'키 다른 소품 3개', d:'높음·중간·낮음으로 삼각형 꼭짓점에.'},
+      {ic:'↻', c:'#5dcaa5', t:'시선이 순환', d:'일렬 배치보다 훨씬 생동감 있어 보임.'},
+    ]},
+  frame:{title:'여백 프레임 격자', sub:'가구를 돋보이게 하는 여백 가이드',
+    how:'가구가 화면의 50~65%를 차지하도록 주피사체 박스(주황)에 맞추고, 사방 여백을 균등하게 잡되 하단 여백을 상단보다 살짝 넓게 줍니다. 가구 다리까지 반드시 프레임 안에 넣으세요.',
+    keys:[
+      {ic:'▣', c:'#ef9f27', t:'가구 = 화면의 65%', d:'너무 작으면 배경이 주인공이 됩니다.'},
+      {ic:'▽', c:'#5dcaa5', t:'하단 여백 > 상단', d:'아래를 넓게 줘야 떠 보이지 않습니다.'},
+    ]},
+};
+
+/* ── 분석 데이터 (원본 AnalysisScreen.js) ── */
+const CHECKS = {
+  indoor:[
+    {t:'수직선 정렬', k:'vertical'},
+    {t:'소실점 위치', k:'vanish'},
+    {t:'공간 균형', k:'balance'},
+    {t:'프레임 활용', k:'frame'},
+  ],
+  outdoor:[
+    {t:'건물 수직선', k:'vertical'},
+    {t:'전·중·배경 레이어', k:'layer'},
+    {t:'지평선 위치', k:'horizon'},
+    {t:'전경 리딩 요소', k:'fg'},
+  ],
+  furniture:[
+    {t:'여백 균형', k:'margin'},
+    {t:'45° 입체 앵글', k:'angle'},
+    {t:'배경 단순도', k:'bg'},
+    {t:'피사체 비율', k:'ratio'},
+  ],
+};
+const ADVICE = {
+  vertical:['완벽하게 수직이 맞았습니다','살짝 기울었어요. 1° 정도 보정이 필요합니다'],
+  vanish:['소실점이 중앙에 잘 정렬됐어요','소실점이 약간 한쪽으로 치우쳤습니다'],
+  balance:['좌우 공간 배분이 안정적입니다','한쪽이 다소 비어 보여요'],
+  frame:['문틀을 프레임으로 잘 활용했어요','프레임 요소를 추가하면 더 좋습니다'],
+  layer:['전·중·배경 3레이어가 뚜렷합니다','전경 요소가 부족해 평면적이에요'],
+  horizon:['지평선이 1/3 지점에 정확합니다','지평선이 정중앙이라 평범해 보여요'],
+  fg:['전경이 시선을 잘 이끕니다','전경 리딩 요소를 넣어보세요'],
+  margin:['사방 여백이 균등하고 하단이 안정적','하단 여백을 조금 더 주세요'],
+  angle:['45° 앵글로 입체감이 살았어요','정면보다 살짝 사선으로 돌려보세요'],
+  bg:['배경이 단순해 가구가 돋보입니다','배경에 잡물이 많아 정리가 필요해요'],
+  ratio:['피사체가 화면의 60%로 적절합니다','가구를 조금 더 크게 담아보세요'],
+};
+
+/* ═══ 상태 ═══ */
+const S = {
+  mode:'indoor', grid:'thirds',
+  tilt:0, smooth:null, landscape:false,
+  coachIndex:0, zoom:0,
+  guideH:false, guideV:false,
+  stream:null, nativeZoom:null,   // {min,max} 지원 시
+  lastPhoto:null,                 // dataURL
+  motionAsked:false,
+};
+
+const $ = id => document.getElementById(id);
+const camEl = $('cam');
+
+/* ═══════════════════════════════════════
+   구도선 SVG (원본 GridOverlay.js 좌표 그대로)
+   ═══════════════════════════════════════ */
+function gridMarkup(grid, W, H, opts){
+  const {showH=false, showV=false, landscape=false} = opts || {};
+  const teal=COLORS.line, amber=COLORS.amber, red=COLORS.red, o=0.85;
+  const directional = grid==='spiral'||grid==='triangle'||grid==='frame'||grid==='layers';
+  const useL = landscape && directional;
+  const PX=(nx,ny)=> useL ? (1-ny)*W : nx*W;
+  const PY=(nx,ny)=> useL ? nx*H : ny*H;
+  const F = n => Math.round(n*10)/10;
+  const line=(x1,y1,x2,y2,st,w,dash,op)=>
+    `<line x1="${F(x1)}" y1="${F(y1)}" x2="${F(x2)}" y2="${F(y2)}" stroke="${st}" stroke-width="${w}"${dash?` stroke-dasharray="${dash}"`:''} opacity="${op!==undefined?op:o}"/>`;
+  const dot=(cx,cy,r,f,op)=>
+    `<circle cx="${F(cx)}" cy="${F(cy)}" r="${r}" fill="${f}"${op!==undefined?` opacity="${op}"`:''}/>`;
+  const txt=(x,y,fill,t)=>
+    `<text x="${F(x)}" y="${F(y)}" fill="${fill}" font-size="11" text-anchor="middle" opacity="0.9">${t}</text>`;
+
+  let s='';
+  if (grid==='thirds'){
+    [1/3,2/3].forEach(r=>{ s+=line(0,H*r,W,H*r,teal,0.8); s+=line(W*r,0,W*r,H,teal,0.8); });
+    [[W/3,H/3],[W*2/3,H/3],[W/3,H*2/3],[W*2/3,H*2/3]].forEach(p=>{ s+=dot(p[0],p[1],3,teal,0.6); });
+    s+=dot(W/2,H*0.42,5,red)+dot(W/2,H*0.42,2,'#fff');
+  } else if (grid==='fifths'){
+    for(let i=1;i<5;i++){ s+=line(0,H*i/5,W,H*i/5,teal,0.6); s+=line(W*i/5,0,W*i/5,H,teal,0.6); }
+    s+=dot(W/5,H*0.4,5,red)+dot(W/5,H*0.4,2,'#fff');
+  } else if (grid==='center'){
+    s+=line(W/2,0,W/2,H,amber,1,'6,4');
+    s+=line(0,H/2,W,H/2,teal,0.8);
+  } else if (grid==='golden'){
+    [0.382,0.618].forEach(r=>{ s+=line(0,H*r,W,H*r,amber,0.9); s+=line(W*r,0,W*r,H,amber,0.9); });
+    s+=dot(W*0.382,H*0.382,5,red)+dot(W*0.382,H*0.382,2,'#fff');
+  } else if (grid==='layers'){
+    if (useL){
+      s+=line(W*0.33,0,W*0.33,H,teal,1.2);
+      s+=line(W*0.62,0,W*0.62,H,teal,1.2,'5,3');
+      s+=line(0,H/2,W*0.38,H/2,amber,1.4,'6,4');
+      s+=txt(W*0.8,H*0.5,teal,'배경')+txt(W*0.48,H*0.5,teal,'중경')+txt(W*0.18,H*0.5,amber,'전경');
+    } else {
+      s+=line(0,H*0.33,W,H*0.33,teal,1.2);
+      s+=line(0,H*0.62,W,H*0.62,teal,1.2,'5,3');
+      s+=line(W/2,H,W/2,H*0.62,amber,1.4,'6,4');
+      s+=txt(W*0.5,H*0.2,teal,'배경')+txt(W*0.5,H*0.48,teal,'중경')+txt(W*0.5,H*0.82,amber,'전경');
+    }
+  } else if (grid==='spiral'){
+    const p=(nx,ny)=>`${F(PX(nx,ny))} ${F(PY(nx,ny))}`;
+    const d=`M ${p(1,0)} C ${p(0.45,0)}, ${p(0.38,0.35)}, ${p(0.38,0.62)} C ${p(0.38,0.85)}, ${p(0.5,1)}, ${p(0.62,0.86)} C ${p(0.7,0.75)}, ${p(0.62,0.62)}, ${p(0.62,0.58)}`;
+    s+=`<path d="${d}" fill="none" stroke="${amber}" stroke-width="1.3" opacity="${o}"/>`;
+    s+=line(PX(0,1),PY(0,1),PX(1,0),PY(1,0),teal,0.6,'6,4',0.6);
+    s+=dot(PX(0.62,0.58),PY(0.62,0.58),5,red)+dot(PX(0.62,0.58),PY(0.62,0.58),2,'#fff');
+  } else if (grid==='triangle'){
+    const tri=`${F(PX(0.5,0.32))},${F(PY(0.5,0.32))} ${F(PX(0.74,0.62))},${F(PY(0.74,0.62))} ${F(PX(0.26,0.62))},${F(PY(0.26,0.62))}`;
+    s+=`<polygon points="${tri}" fill="none" stroke="${amber}" stroke-width="1.1" stroke-dasharray="5,3" opacity="${o}"/>`;
+    [1/3,2/3].forEach(r=>{
+      s+=line(0,H*r,W,H*r,teal,0.5,'2,3',0.5);
+      s+=line(W*r,0,W*r,H,teal,0.5,'2,3',0.5);
+    });
+    s+=dot(PX(0.5,0.32),PY(0.5,0.32),4,red);
+  } else if (grid==='frame'){
+    const m=0.13;
+    s+=`<rect x="${F(W*m)}" y="${F(H*m)}" width="${F(W*(1-2*m))}" height="${F(H*(1-2*m))}" fill="none" stroke="${teal}" stroke-width="1" stroke-dasharray="5,3" opacity="${o}"/>`;
+    const sw=useL?0.56:0.66, sh=useL?0.66:0.56;
+    const sx=(1-sw)/2, sy=(1-sh)/2;
+    s+=`<rect x="${F(W*sx)}" y="${F(H*sy)}" width="${F(W*sw)}" height="${F(H*sh)}" fill="none" stroke="${amber}" stroke-width="1.2" opacity="${o}"/>`;
+    s+=txt(W*0.5,H*sy-8,amber,'주피사체 65%');
+  }
+  if (showH) s+=line(0,H/2,W,H/2,'#ffffff',1.5,null,0.9);
+  if (showV) s+=line(W/2,0,W/2,H,'#ffffff',1.5,null,0.9);
+  return s;
+}
+
+/* 작은 구도선 미리보기 (원본 GuidePreview.js) */
+function previewMarkup(grid, W, H){
+  const teal=COLORS.line, amber=COLORS.amber, red=COLORS.red;
+  const L=(x1,y1,x2,y2,c,dash)=>`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${c}" stroke-width="1"${dash?` stroke-dasharray="${dash}"`:''}/>`;
+  const D=(x,y,r,c)=>`<circle cx="${x}" cy="${y}" r="${r}" fill="${c}"/>`;
+  let s=`<rect x="0" y="0" width="${W}" height="${H}" fill="#1a1a1c"/>`
+       +`<rect x="0" y="${H*0.55}" width="${W}" height="${H*0.45}" fill="#2e2a26"/>`
+       +`<rect x="${W*0.2}" y="${H*0.42}" width="${W*0.42}" height="${H*0.3}" fill="#7a5c3e"/>`;
+  if (grid==='thirds'){
+    [1/3,2/3].forEach(r=>{ s+=L(0,H*r,W,H*r,teal)+L(W*r,0,W*r,H,teal); });
+    s+=D(W/3,H/3,3,teal)+D(W/2,H*0.42,4,red);
+  } else if (grid==='fifths'){
+    for(let i=1;i<5;i++){ s+=L(0,H*i/5,W,H*i/5,teal)+L(W*i/5,0,W*i/5,H,teal); }
+    s+=D(W/5,H*0.4,4,red);
+  } else if (grid==='center'){
+    s+=L(W/2,0,W/2,H,amber,'4,3')+L(0,H/2,W,H/2,teal);
+  } else if (grid==='golden'){
+    [0.382,0.618].forEach(r=>{ s+=L(0,H*r,W,H*r,amber)+L(W*r,0,W*r,H,amber); });
+    s+=D(W*0.382,H*0.382,4,red);
+  } else if (grid==='layers'){
+    s+=L(0,H*0.33,W,H*0.33,teal)+L(0,H*0.62,W,H*0.62,teal,'4,3')+L(W/2,H,W/2,H*0.62,amber,'4,3');
+  } else if (grid==='spiral'){
+    const d=`M ${W} 0 C ${W*0.45} 0, ${W*0.38} ${H*0.35}, ${W*0.38} ${H*0.62} C ${W*0.38} ${H*0.85}, ${W*0.5} ${H}, ${W*0.62} ${H*0.86} C ${W*0.7} ${H*0.75}, ${W*0.62} ${H*0.62}, ${W*0.62} ${H*0.58}`;
+    s+=`<path d="${d}" fill="none" stroke="${amber}" stroke-width="1.5"/>`+D(W*0.62,H*0.58,4,red);
+  } else if (grid==='triangle'){
+    s+=`<polygon points="${W*0.5},${H*0.32} ${W*0.74},${H*0.62} ${W*0.26},${H*0.62}" fill="none" stroke="${amber}" stroke-width="1" stroke-dasharray="4,3"/>`+D(W*0.5,H*0.32,4,red);
+  } else if (grid==='frame'){
+    s+=`<rect x="${W*0.13}" y="${H*0.13}" width="${W*0.74}" height="${H*0.74}" fill="none" stroke="${teal}" stroke-width="1" stroke-dasharray="4,3"/>`
+      +`<rect x="${W*0.17}" y="${H*0.2}" width="${W*0.66}" height="${H*0.6}" fill="none" stroke="${amber}" stroke-width="1"/>`;
+  }
+  return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${s}</svg>`;
+}
+
+/* ═══ 카메라 화면 렌더링 ═══ */
+function renderGrid(){
+  const W=window.innerWidth, H=window.innerHeight;
+  const svg=$('gridSvg');
+  svg.setAttribute('width',W); svg.setAttribute('height',H);
+  svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+  svg.innerHTML=gridMarkup(S.grid,W,H,{showH:S.guideH,showV:S.guideV,landscape:S.landscape});
+}
+
+function renderModes(){
+  $('modes').innerHTML=Object.values(MODES).map(m=>
+    `<button class="modeBtn${S.mode===m.key?' on':''}" data-mode="${m.key}">${ICONS[m.icon]}${m.name}</button>`
+  ).join('');
+  $('modes').querySelectorAll('.modeBtn').forEach(b=>
+    b.addEventListener('click',()=>changeMode(b.dataset.mode)));
+}
+
+function renderPills(){
+  const md=MODES[S.mode];
+  $('gridPills').innerHTML=md.grids.map(g=>
+    `<button class="gridPill${S.grid===g?' on':''}" data-grid="${g}">${md.gridLabels[g]}</button>`
+  ).join('');
+  $('gridPills').querySelectorAll('.gridPill').forEach(b=>
+    b.addEventListener('click',()=>{ S.grid=b.dataset.grid; renderPills(); renderGrid(); }));
+}
+
+function changeMode(m){
+  S.mode=m; S.grid=MODES[m].grids[0]; S.coachIndex=0;
+  renderModes(); renderPills(); renderGrid(); renderCoach();
+}
+
+function cycleGrid(){
+  const grids=MODES[S.mode].grids;
+  const idx=grids.indexOf(S.grid);
+  S.grid=grids[(idx+1)%grids.length];
+  renderPills(); renderGrid();
+}
+
+/* 실시간 점수 + 코치 (원본 로직) */
+function liveScore(){
+  const penalty=Math.min(Math.abs(S.tilt)*4,35);
+  return Math.max(45,Math.min(98,Math.round(88-penalty)));
+}
+function currentCoach(){
+  if (S.tilt>1.5) return {type:'warn',text:'오른쪽으로 기울었어요 · 왼쪽으로 살짝 세우세요'};
+  if (S.tilt<-1.5) return {type:'warn',text:'왼쪽으로 기울었어요 · 오른쪽으로 살짝 세우세요'};
+  const md=MODES[S.mode];
+  const goodMsgs=md.coachMessages.filter(m=>m.type==='good');
+  const list=goodMsgs.length?goodMsgs:md.coachMessages;
+  return list[S.coachIndex%list.length];
+}
+function renderCoach(){
+  const c=currentCoach();
+  $('coach').classList.toggle('warn',c.type==='warn');
+  $('coachTxt').textContent=c.text;
+  $('liveScore').textContent=liveScore();
+}
+setInterval(()=>{ S.coachIndex++; renderCoach(); },3200);
+
+/* 수평계 */
+function renderLevel(){
+  const on=S.guideH||S.guideV;
+  $('level').classList.toggle('on',on);
+  if(!on) return;
+  const vertical=S.guideV&&!S.guideH;
+  const isLevel=Math.abs(S.tilt)<1.0;
+  const color=isLevel?COLORS.accent:COLORS.amber;
+  const base=vertical?90:0;
+  $('levelLine').style.background=color;
+  $('levelLine').style.transform=`rotate(${base+S.tilt}deg)`;
+  $('levelDot').style.background=color;
+  $('levelBadge').textContent=vertical?'수직 맞음':'수평 맞음';
+  $('levelBadge').classList.toggle('on',isLevel);
+}
+
+/* ═══ 기울기 센서 ═══
+   devicemotion 중력가속도로 좌우 기울기(roll) 계산.
+   어느 방향으로 들어도(세로/가로/뒤집힘) 가장 가까운
+   기준 자세 대비 기울기를 구함 → 원본 앱과 동일한 동작. */
+function onMotion(e){
+  const g=e.accelerationIncludingGravity;
+  if(!g||g.x===null||g.y===null) return;
+  let raw=Math.atan2(g.x,g.y)*(180/Math.PI); // 세로 정자세=0
+  // 가장 가까운 90° 기준(0,±90,180)과의 차이가 실제 좌우 기울기
+  const nearest=Math.round(raw/90)*90;
+  let angle=raw-nearest;
+  S.landscape=(Math.abs(nearest)===90);
+  S.smooth=S.smooth===null?angle:S.smooth*0.75+angle*0.25;
+  const deg=Math.max(-20,Math.min(20,S.smooth));
+  const changed=Math.abs(deg-S.tilt)>0.15;
+  S.tilt=deg;
+  if(changed){ renderLevel(); renderCoach(); renderGrid(); }
+}
+function startMotion(){
+  window.addEventListener('devicemotion',onMotion);
+}
+/* iOS 13+ 는 사용자 제스처 안에서 권한 요청 필요 */
+function ensureMotionPermission(){
+  if(S.motionAsked) return;
+  S.motionAsked=true;
+  if(typeof DeviceMotionEvent!=='undefined'
+     && typeof DeviceMotionEvent.requestPermission==='function'){
+    DeviceMotionEvent.requestPermission().then(res=>{
+      if(res==='granted') startMotion();
+    }).catch(()=>{});
+  } else {
+    startMotion();
+  }
+}
+document.addEventListener('pointerdown',ensureMotionPermission,{once:true});
+// 권한 요청이 필요 없는 환경(안드로이드 등)은 즉시 시작
+if(typeof DeviceMotionEvent==='undefined'
+   || typeof DeviceMotionEvent.requestPermission!=='function'){
+  startMotion(); S.motionAsked=true;
+}
+
+/* ═══ 카메라 ═══ */
+async function startCamera(){
+  stopCamera();
+  try{
+    if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
+      throw Object.assign(new Error('unsupported'),{name:'Unsupported'});
+    }
+    const stream=await navigator.mediaDevices.getUserMedia({
+      video:{ facingMode:{ideal:'environment'},
+              width:{ideal:1920}, height:{ideal:1080} },
+      audio:false
+    });
+    S.stream=stream;
+    camEl.srcObject=stream;
+    // 네이티브 줌 지원 확인 (안드로이드 크롬 등)
+    const track=stream.getVideoTracks()[0];
+    S.nativeZoom=null;
+    if(track.getCapabilities){
+      const cap=track.getCapabilities();
+      if(cap.zoom&&cap.zoom.max>cap.zoom.min){
+        S.nativeZoom={min:cap.zoom.min,max:Math.min(cap.zoom.max,cap.zoom.min*5),track};
+      }
+    }
+    applyZoom();
+    showScreen('cam');
+  }catch(err){
+    showCameraError(err);
+  }
+}
+function stopCamera(){
+  if(S.stream){ S.stream.getTracks().forEach(t=>t.stop()); S.stream=null; }
+}
+function showCameraError(err){
+  const title=$('permTitle'), desc=$('permDesc');
+  if(!window.isSecureContext){
+    title.textContent='HTTPS 접속이 필요해요';
+    desc.textContent='브라우저 보안 정책상 카메라는 https:// 주소에서만 켜집니다. GitHub Pages 등에 올린 주소로 접속해주세요. 갤러리 사진 분석은 지금도 사용할 수 있어요.';
+  } else if(err&&(err.name==='NotAllowedError'||err.name==='PermissionDeniedError')){
+    title.textContent='카메라 권한이 필요해요';
+    desc.textContent='사진 구도를 분석하려면 카메라 접근을 허용해주세요. 거부하셨다면 브라우저 설정(사이트 권한)에서 카메라를 허용으로 바꾼 뒤 다시 시도해주세요.';
+  } else if(err&&err.name==='NotFoundError'){
+    title.textContent='카메라를 찾을 수 없어요';
+    desc.textContent='이 기기에서 사용 가능한 카메라가 없습니다. 갤러리 사진 분석은 사용할 수 있어요.';
+  } else {
+    title.textContent='카메라를 켤 수 없어요';
+    desc.textContent='다른 앱이 카메라를 사용 중이거나 일시적인 문제일 수 있어요. 다시 시도해주세요.';
+  }
+  showScreen('perm');
+}
+
+/* 줌: 네이티브 지원 시 트랙 제어, 아니면 디지털(CSS 확대) */
+function applyZoom(){
+  const factor=1+S.zoom*4; // 1.0×~5.0×
+  $('zoomLabel').textContent=factor.toFixed(1)+'×';
+  $('zoomSlider').style.setProperty('--fill',(S.zoom*100)+'%');
+  if(S.nativeZoom){
+    const z=S.nativeZoom.min+(S.nativeZoom.max-S.nativeZoom.min)*S.zoom;
+    S.nativeZoom.track.applyConstraints({advanced:[{zoom:z}]}).catch(()=>{});
+    camEl.style.transform='translate(-50%,-50%)';
+  } else {
+    camEl.style.transform=`translate(-50%,-50%) scale(${factor})`;
+  }
+}
+
+/* ═══ 촬영 / 갤러리 ═══ */
+function capturePhoto(){
+  if(!S.stream||camEl.videoWidth===0) return null;
+  const vw=camEl.videoWidth, vh=camEl.videoHeight;
+  const canvas=$('capCanvas');
+  const ctx=canvas.getContext('2d');
+  if(S.nativeZoom){
+    canvas.width=vw; canvas.height=vh;
+    ctx.drawImage(camEl,0,0);
+  } else {
+    // 디지털 줌: 화면과 동일하게 중앙 크롭
+    const factor=1+S.zoom*4;
+    const cw=vw/factor, ch=vh/factor;
+    canvas.width=Math.round(cw); canvas.height=Math.round(ch);
+    ctx.drawImage(camEl,(vw-cw)/2,(vh-ch)/2,cw,ch,0,0,canvas.width,canvas.height);
+  }
+  return canvas.toDataURL('image/jpeg',0.85);
+}
+
+function takePhoto(){
+  const flash=$('flash');
+  flash.style.opacity='0.85';
+  setTimeout(()=>{ flash.style.opacity='0'; },90);
+  let uri=null;
+  try{ uri=capturePhoto(); }catch(e){ /* 실패해도 분석 화면은 띄움 (원본과 동일) */ }
+  openAnalysis(uri);
+}
+
+$('fileInput').addEventListener('change',e=>{
+  const f=e.target.files&&e.target.files[0];
+  if(!f) return;
+  const reader=new FileReader();
+  reader.onload=()=>openAnalysis(reader.result);
+  reader.readAsDataURL(f);
+  e.target.value='';
+});
+function pickFromGallery(){ $('fileInput').click(); }
+
+/* ═══ 분석 화면 ═══ */
+let ringTimer=null;
+function openAnalysis(photoUri){
+  S.lastPhoto=photoUri||null;
+  const checks=CHECKS[S.mode].map(c=>{
+    const good=Math.random()>0.38;
+    const score=good?80+Math.round(Math.random()*18):52+Math.round(Math.random()*22);
+    return {...c,good,score,advice:ADVICE[c.k][good?0:1]};
+  });
+  const total=Math.round(checks.reduce((s,c)=>s+c.score,0)/checks.length);
+  const ringColor=total>=80?COLORS.accent:total>=65?COLORS.amber:COLORS.red;
+  const verdict=total>=85
+    ? {t:'훌륭한 구도예요!', d:'포트폴리오에 바로 쓸 수 있는 수준입니다.'}
+    : total>=70
+    ? {t:'좋은 구도입니다', d:'한두 가지만 보정하면 더 완성도가 높아져요.'}
+    : {t:'다시 촬영을 권해요', d:'아래 항목을 참고해 구도를 조정해보세요.'};
+  const circ=2*Math.PI*30;
+
+  const body=$('anaBody');
+  const imgW=Math.min(window.innerWidth,560)-36;
+  const imgH=imgW*0.75;
+  body.innerHTML=`
+    <div class="imgWrap">
+      ${photoUri
+        ? `<img src="${photoUri}" alt="촬영 사진">`
+        : `<div class="ph"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="16" rx="2.5"/><circle cx="9" cy="10" r="1.8"/><path d="M3.5 17l4.8-4.8a1.5 1.5 0 012.1 0L15 16.8"/></svg></div>`}
+      <svg class="ov" viewBox="0 0 ${imgW} ${imgH}" preserveAspectRatio="none">${gridMarkup(S.grid,imgW,imgH,{})}</svg>
+    </div>
+    <div class="scoreCard">
+      <div class="ringBox">
+        <svg width="72" height="72">
+          <circle cx="36" cy="36" r="30" stroke="${COLORS.surface2}" stroke-width="6" fill="none"/>
+          <circle id="ringFg" cx="36" cy="36" r="30" stroke="${ringColor}" stroke-width="6" fill="none"
+            stroke-linecap="round" stroke-dasharray="${circ}" stroke-dashoffset="${circ}"
+            transform="rotate(-90 36 36)"/>
+        </svg>
+        <div class="ringNum" id="ringNum">0</div>
+      </div>
+      <div class="verdict">
+        <div class="verdictT">${verdict.t}</div>
+        <div class="verdictD">${verdict.d}</div>
+      </div>
+    </div>
+    ${checks.map(c=>`
+      <div class="checkItem">
+        <div class="checkIc ${c.good?'ok':'warn'}">${c.good?'✓':'!'}</div>
+        <div class="checkBody">
+          <div class="checkT">${c.t}</div>
+          <div class="checkD">${c.advice}</div>
+        </div>
+        <span class="checkScore" style="color:${c.good?COLORS.accent:COLORS.amber}">${c.score}</span>
+      </div>`).join('')}
+    <button class="primaryBtn" id="btnRetake">이 구도로 다시 촬영</button>
+    ${photoUri?'<button class="ghostBtn" id="btnSaveBottom">사진 저장하기</button>':''}
+  `;
+  body.scrollTop=0;
+  $('btnRetake').addEventListener('click',closeAnalysis);
+  $('btnSave').style.display=photoUri?'flex':'none';
+  if(photoUri) $('btnSaveBottom').addEventListener('click',savePhoto);
+  showScreen('ana');
+
+  // 점수 카운트업 (원본과 동일한 리듬)
+  if(ringTimer) clearInterval(ringTimer);
+  let n=0;
+  const ringFg=$('ringFg'), ringNum=$('ringNum');
+  ringTimer=setInterval(()=>{
+    n+=Math.ceil(total/18);
+    if(n>=total){ n=total; clearInterval(ringTimer); ringTimer=null; }
+    ringNum.textContent=n;
+    ringFg.setAttribute('stroke-dashoffset',circ*(1-n/100));
+  },28);
+}
+function closeAnalysis(){
+  if(ringTimer){ clearInterval(ringTimer); ringTimer=null; }
+  if(S.stream) showScreen('cam'); else startCamera();
+}
+function savePhoto(){
+  if(!S.lastPhoto) return;
+  const a=document.createElement('a');
+  const d=new Date();
+  const pad=n=>String(n).padStart(2,'0');
+  a.href=S.lastPhoto;
+  a.download=`frameguide_${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}.jpg`;
+  document.body.appendChild(a); a.click(); a.remove();
+}
+
+/* ═══ 바텀시트 ═══ */
+function openSheet(which){
+  if(which==='howto'){
+    const g=GRID_GUIDE[S.grid];
+    $('howtoContent').innerHTML=`
+      <div class="howtoHead">
+        <div style="flex:1">
+          <div class="sheetSub">${g.title}</div>
+          <div class="sheetSubDim">${g.sub}</div>
+        </div>
+        <div class="previewBox">${previewMarkup(S.grid,150,112)}</div>
+      </div>
+      <div class="howtoDesc">${g.how}</div>
+      ${g.keys.map(k=>`
+        <div class="keyRow">
+          <span class="keyIc" style="color:${k.c}">${k.ic}</span>
+          <div style="flex:1">
+            <div class="keyT">${k.t}</div>
+            <div class="keyD">${k.d}</div>
+          </div>
+        </div>`).join('')}
+      <button class="secondaryBtn" id="btnSheetTips">이 모드 전문가 팁 보기</button>
+    `;
+    $('btnSheetTips').addEventListener('click',()=>{ closeSheets(); setTimeout(()=>openSheet('tips'),250); });
+    $('sheetHowto').classList.add('on');
+  } else {
+    const md=MODES[S.mode];
+    $('tipsContent').innerHTML=`
+      <div class="sheetSub">${md.name}</div>
+      <div class="sheetTitle">이 모드 전문가 팁</div>
+      ${md.tips.map(t=>`
+        <div class="keyRow">
+          <span class="keyIc" style="color:${t.color}">${t.ic}</span>
+          <div style="flex:1">
+            <div class="keyT">${t.t}</div>
+            <div class="keyD">${t.d}</div>
+          </div>
+        </div>`).join('')}
+    `;
+    $('sheetTips').classList.add('on');
+  }
+  $('backdrop').classList.add('on');
+}
+function closeSheets(){
+  $('sheetHowto').classList.remove('on');
+  $('sheetTips').classList.remove('on');
+  $('backdrop').classList.remove('on');
+}
+$('backdrop').addEventListener('click',closeSheets);
+
+/* ═══ 화면 전환 ═══ */
+function showScreen(name){
+  $('camScreen').classList.toggle('on',name==='cam');
+  $('permScreen').classList.toggle('on',name==='perm');
+  $('anaScreen').classList.toggle('on',name==='ana');
+}
+
+/* ═══ 이벤트 연결 ═══ */
+$('btnTips').addEventListener('click',()=>openSheet('tips'));
+$('btnHowto').addEventListener('click',()=>openSheet('howto'));
+$('btnShutter').addEventListener('click',takePhoto);
+$('btnGallery').addEventListener('click',pickFromGallery);
+$('btnGallery2').addEventListener('click',pickFromGallery);
+$('btnCycle').addEventListener('click',cycleGrid);
+$('btnRetry').addEventListener('click',startCamera);
+$('btnAnaClose').addEventListener('click',closeAnalysis);
+$('btnSave').addEventListener('click',savePhoto);
+$('btnGuideH').addEventListener('click',()=>{
+  S.guideH=!S.guideH;
+  $('btnGuideH').classList.toggle('on',S.guideH);
+  renderLevel(); renderGrid();
+});
+$('btnGuideV').addEventListener('click',()=>{
+  S.guideV=!S.guideV;
+  $('btnGuideV').classList.toggle('on',S.guideV);
+  renderLevel(); renderGrid();
+});
+$('zoomSlider').addEventListener('input',e=>{
+  S.zoom=parseFloat(e.target.value); applyZoom();
+});
+window.addEventListener('resize',renderGrid);
+window.addEventListener('orientationchange',()=>setTimeout(renderGrid,300));
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible'
+     && $('camScreen').classList.contains('on') && !S.stream){
+    startCamera();
+  }
+});
+
+/* ═══ 시작 ═══ */
+renderModes(); renderPills(); renderGrid(); renderCoach(); applyZoom();
+startCamera();
+</script>
+</body>
+</html>
