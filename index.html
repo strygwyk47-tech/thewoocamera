@@ -644,11 +644,19 @@ function cycleGrid(){
 }
 
 /* 실시간 점수 + 코치 (원본 로직) */
+let coachOverride=null, coachOverrideTimer=null;
+function showCoachNotice(text){
+  coachOverride={type:'warn',text};
+  renderCoach();
+  clearTimeout(coachOverrideTimer);
+  coachOverrideTimer=setTimeout(()=>{ coachOverride=null; renderCoach(); },5000);
+}
 function liveScore(){
   const penalty=Math.min(Math.abs(S.tilt)*4,35);
   return Math.max(45,Math.min(98,Math.round(88-penalty)));
 }
 function currentCoach(){
+  if (coachOverride) return coachOverride;
   if (S.tilt>1.5) return {type:'warn',text:'오른쪽으로 기울었어요 · 왼쪽으로 살짝 세우세요'};
   if (S.tilt<-1.5) return {type:'warn',text:'왼쪽으로 기울었어요 · 오른쪽으로 살짝 세우세요'};
   const md=MODES[S.mode];
@@ -687,6 +695,7 @@ function renderLevel(){
 function onMotion(e){
   const g=e.accelerationIncludingGravity;
   if(!g||g.x===null||g.y===null) return;
+  sensorActive=true;
   let raw=Math.atan2(g.x,g.y)*(180/Math.PI); // 세로 정자세=0
   // 가장 가까운 90° 기준(0,±90,180)과의 차이가 실제 좌우 기울기
   const nearest=Math.round(raw/90)*90;
@@ -701,25 +710,30 @@ function onMotion(e){
 function startMotion(){
   window.addEventListener('devicemotion',onMotion);
 }
-/* iOS 13+ 는 사용자 제스처 안에서 권한 요청 필요 */
-function ensureMotionPermission(){
-  if(S.motionAsked) return;
-  S.motionAsked=true;
-  if(typeof DeviceMotionEvent!=='undefined'
-     && typeof DeviceMotionEvent.requestPermission==='function'){
-    DeviceMotionEvent.requestPermission().then(res=>{
-      if(res==='granted') startMotion();
-    }).catch(()=>{});
-  } else {
-    startMotion();
-  }
+
+/* iOS 13+ 는 "사용자가 버튼을 누르는 순간"에만 권한 요청 창을
+   띄울 수 있음 → 수평/수직 버튼 터치 시 요청 */
+let sensorActive=false;   // 실제 센서 데이터 수신 확인됨
+let sensorDenied=false;   // 사용자가 권한을 거부함
+const NEEDS_PERM = typeof DeviceMotionEvent!=='undefined'
+  && typeof DeviceMotionEvent.requestPermission==='function';
+
+function requestMotion(){
+  if(!NEEDS_PERM){ startMotion(); return; }
+  DeviceMotionEvent.requestPermission().then(res=>{
+    if(res==='granted'){ sensorDenied=false; startMotion(); }
+    else {
+      sensorDenied=true;
+      showCoachNotice('기울기 센서 거부됨 · 사파리 ᴀA 메뉴 → 웹 사이트 설정 → 동작 및 방향 접근 허용');
+    }
+  }).catch(()=>{});
 }
-document.addEventListener('pointerdown',ensureMotionPermission,{once:true});
+/* 수평/수직 버튼 등에서 호출: 센서가 아직 안 켜졌으면 권한 요청 */
+function ensureSensor(){
+  if(NEEDS_PERM && !sensorActive) requestMotion();
+}
 // 권한 요청이 필요 없는 환경(안드로이드 등)은 즉시 시작
-if(typeof DeviceMotionEvent==='undefined'
-   || typeof DeviceMotionEvent.requestPermission!=='function'){
-  startMotion(); S.motionAsked=true;
-}
+if(!NEEDS_PERM) startMotion();
 
 /* ═══ 카메라 ═══ */
 async function startCamera(){
@@ -979,11 +993,13 @@ $('btnSave').addEventListener('click',savePhoto);
 $('btnGuideH').addEventListener('click',()=>{
   S.guideH=!S.guideH;
   $('btnGuideH').classList.toggle('on',S.guideH);
+  if(S.guideH) ensureSensor();
   renderLevel(); renderGrid();
 });
 $('btnGuideV').addEventListener('click',()=>{
   S.guideV=!S.guideV;
   $('btnGuideV').classList.toggle('on',S.guideV);
+  if(S.guideV) ensureSensor();
   renderLevel(); renderGrid();
 });
 $('zoomSlider').addEventListener('input',e=>{
